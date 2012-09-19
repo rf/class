@@ -68,4 +68,20 @@
    performance will vary depending on network load.
 
 
-7. 
+7. Network Address Translation causes many hosts to appear to have a single
+   address on some wider area network.  Since every device doesn't need a
+   globally unique identifier, we need fewer globally unique identifiers.
+
+
+8. Network Address and Port Translation simply also does a port translation.
+   In this way, we can have several addresses mapped to one address at a time.
+   So, many outgoing connections from The Inside can communicate simultaneously
+   with a server on The Outside with the same source port.
+
+9. CIDR allows us to be much more precise about the way we allocate IP
+   addresses.  With classful networks, the sizes of the ip ranges being
+   allocated were often times much larger than an organization needed, because
+   the next smallest class was too small.  CIDR allows us to slice up the
+   available IP addresses into much finer slices, thereby partitioning the ip
+   space much more efficiently.
+
