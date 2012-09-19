@@ -22,7 +22,7 @@
    have a backup of the data.  The hard part of replication is keeping the
    replicas in sync.
 
-   A distributed system will be split accross several subsystems, each which
+   A distributed system will be split across several subsystems, each which
    can service a subset of possible queries.  This is also called sharding.
    The client of the service must be able to determine which server houses the
    data; or, it can connect to some system in the middle which will determine
@@ -51,7 +51,7 @@
    capabilities of underlying physical networks because it was designed be
    completely agnostic of the hardware.  Otherwise, for every type of network,
    the engineering to produce reliable delivery would have to be re-engineered;
-   by doing this work at the transport layer (ie, on top of a simple datagram
+   by doing this work at the transport layer (i.e., on top of a simple datagram
    layer), we only have to engineer reliable transport once.
 
 
@@ -79,9 +79,9 @@
    with a server on The Outside with the same source port.
 
 9. CIDR allows us to be much more precise about the way we allocate IP
-   addresses.  With classful networks, the sizes of the ip ranges being
+   addresses.  With classful networks, the sizes of the IP ranges being
    allocated were often times much larger than an organization needed, because
    the next smallest class was too small.  CIDR allows us to slice up the
-   available IP addresses into much finer slices, thereby partitioning the ip
+   available IP addresses into much finer slices, thereby partitioning the IP
    space much more efficiently.
 
