@@ -47,4 +47,25 @@
    to wait several round trip times before we can continue receiving data.
 
 
-5. 
+5. It was decided that internet protocols would not take advantage of 
+   capabilities of underlying physical networks because it was designed be
+   completely agnostic of the hardware.  Otherwise, for every type of network,
+   the engineering to produce reliable delivery would have to be re-engineered;
+   by doing this work at the transport layer (ie, on top of a simple datagram
+   layer), we only have to engineer reliable transport once.
+
+
+6. Three properties of a packet switched network are:
+
+   Asynchronous communication: any node can generate or receive packets at
+   any time.
+
+   No set-up required: a packet can be generated and placed onto the wire and
+   it will be automatically taken to its destination.  We do not have to
+   establish a link first.
+
+   Varying performance: since we are multiplexing many packets onto one wire,
+   performance will vary depending on network load.
+
+
+7. 
