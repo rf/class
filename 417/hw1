@@ -5,8 +5,46 @@
    a scheduler can achieve processor affinity if it is able to associate one
    schedulable unit (i.e., a 'thread' or 'process') with one processor.
 
+
 2. In a NUMA architecture, some cores will be 'closer' to some portions of the
    main memory; that is, the access time will be much lower.  Therefore, a
    scheduler will want to attempt to achieve processor affinity by keeping
    schedulable units on a single core or set of cores.
 
+
+3. Three techniques used to reduce load on a system are replication, 
+   distribution, and caching.
+
+   A replicated system involves multiple subsystems that can handle any query.
+   For example, both MySQL and PostgreSQL have built in replication mechanisms
+   that will allow reads to occur on multiple boxes (writes still must occur
+   on the master).  Performance for servicing queries will increase; we also
+   have a backup of the data.  The hard part of replication is keeping the
+   replicas in sync.
+
+   A distributed system will be split accross several subsystems, each which
+   can service a subset of possible queries.  This is also called sharding.
+   The client of the service must be able to determine which server houses the
+   data; or, it can connect to some system in the middle which will determine
+   this.  Proxies for many popular RDBMSes exist (e.g. PL/Proxy) which can be
+   used to implement this; other databases have it built-in (MongoDB).
+   Sharding is advantageous because we do not have to keep a copy of all of the
+   data on every box, thereby saving storage resources, and saving us (some) of
+   the trouble of keeping replicas in sync.
+
+   A cached system will have some queries cached in a middle layer.  This is
+   usually handled in application code.  This simply involves placing complex
+   queries in some cache such as Memcached or Redis.  When the query needs to
+   be run again, it can be retrieved from the cache instead of re-computed.
+   This is especially useful for read heavy applications.
+
+
+4. It was discovered that the greatest source of jitter was the process for
+   retransmitting lost packets in a reliable transport protocol.  A reliable
+   transport protocol will likely request a retransmission of the lost packet;
+   it won't take any new data until the lost packet is received.  This delay
+   introduces a large amount of jitter, as whenever a packet is lost, we have
+   to wait several round trip times before we can continue receiving data.
+
+
+5. 
