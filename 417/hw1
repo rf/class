@@ -1,0 +1,12 @@
+1. We say that a system has achieved affinity if it can associate some
+   resource consumer with the resources consumed.  Processor affinity refers
+   to one specific instance of affinity where the resource consumer is some
+   schedulable unit and the resource consumed is processor time.  Therefore,
+   a scheduler can achieve processor affinity if it is able to associate one
+   schedulable unit (i.e., a 'thread' or 'process') with one processor.
+
+2. In a NUMA architecture, some cores will be 'closer' to some portions of the
+   main memory; that is, the access time will be much lower.  Therefore, a
+   scheduler will want to attempt to achieve processor affinity by keeping
+   schedulable units on a single core or set of cores.
+
