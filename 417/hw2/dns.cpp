@@ -54,6 +54,8 @@ parse_dns_req (char * input, int * len, int * type, int * klass) {
   return string(buf);
 }
 
+// ### strip_to_intip
+// Converts an ip in a string to an integer representation of the ip
 int
 strip_to_intip (string input) {
   int output;

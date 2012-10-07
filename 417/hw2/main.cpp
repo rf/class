@@ -12,6 +12,8 @@ using namespace std;
 #include "dns.h"
 
 // Group member: Russ Frank, working alone
+// You will need at least gcc version 4.4 to compile this code as it makes
+// use of the 'auto' keyword
 
 int
 main (int argc, char ** argv) {

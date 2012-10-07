@@ -8,6 +8,8 @@ using namespace std;
 
 #include "dns.h"
 
+// ### get_names
+// Creates a map of dns protocol formatted names to ips from a file
 const map <string, string>
 get_names (string file_name) {
   ifstream file(file_name);
