@@ -30,4 +30,4 @@ $(TESTS):
 
 clean:
 	rm -f *.o
-	rm dns-server
+	rm -f dns-server

@@ -28,9 +28,9 @@ main (int argc, char ** argv) {
 
   assert(dns_repr[15] == 0);
 
-  int q_len;
+  int q_len, type, klass;
   try {
-    auto parsed = parse_dns_req(req, &q_len);
+    auto parsed = parse_dns_req(req, & q_len, & type, & klass);
   } catch (char const * e) {
     cout << e << endl;
     return 1;
