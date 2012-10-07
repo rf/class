@@ -28,8 +28,8 @@ name_to_dns (string input) {
 
 // ### parse_dns_req
 // Takes an entire dns packet and returns just the string of the requested
-// host or throws if we don't support the request
-string
+// host or null if we can't handle the request
+string *
 parse_dns_req (char * input, int * len) {
   dns_header * h = (dns_header *) input;
 
@@ -46,15 +46,15 @@ parse_dns_req (char * input, int * len) {
 
   dns_question * q = (dns_question *) ptr;
 
-  unsigned short type = ntohs(q->qtype);
-  if (type != 1) throw "can only handle A requests";
-
-  unsigned short klass = ntohs(q->qclass);
-  if (klass != 1) throw "can only handle internet question class";
-
   *len = strlen(buf) + 1 + 4;
 
-  return string(buf);
+  unsigned short type = ntohs(q->qtype);
+  if (type != 1) return NULL;
+
+  unsigned short klass = ntohs(q->qclass);
+  if (klass != 1) return NULL;
+
+  return new string(buf);
 }
 
 int

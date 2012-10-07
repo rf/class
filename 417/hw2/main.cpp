@@ -54,50 +54,44 @@ main (int argc, char ** argv) {
       & addrlen
     );
 
-    try {
-      auto parsed = parse_dns_req(buf, &q_len);
-      res_len = 0;
+    auto parsed = parse_dns_req(buf, &q_len);
+    res_len = 0;
 
-      cout << "Received a request for: " << parsed << endl;
+    char * ptr = buf;
 
-      char * ptr = buf;
+    dns_header * h = (dns_header *) ptr;
+    h->qr = 1;
+    res_len += sizeof(dns_header) + q_len;
 
-      dns_header * h = (dns_header *) ptr;
-      h->qr = 1;
-      res_len += sizeof(dns_header) + q_len;
+    if (parsed && names.count(*parsed) == 1) {
+      cout << "Returning: " << names[*parsed] << endl;
 
-      if (names.count(parsed) == 1) {
-        cout << "Returning: " << names[parsed] << endl;
+      h->aa = 1;
+      h->tc = 0;
+      h->ra = 0;
+      h->rcode = 0;
+      h->an_count = htons(1);
 
-        h->aa = 1;
-        h->tc = 0;
-        h->ra = 0;
-        h->rcode = 0;
-        h->an_count = htons(1);
+      ptr += sizeof(dns_header) + q_len;
 
-        ptr += sizeof(dns_header) + q_len;
+      memcpy(ptr, parsed->c_str(), strlen(parsed->c_str()) + 1);
+      ptr += strlen(parsed->c_str()) + 1;
+      res_len += strlen(parsed->c_str()) + 1;
 
-        memcpy(ptr, parsed.c_str(), strlen(parsed.c_str()) + 1);
-        ptr += strlen(parsed.c_str()) + 1;
-        res_len += strlen(parsed.c_str()) + 1;
+      dns_ip_answer * a = (dns_ip_answer *) ptr;
+      memset(a, 0, sizeof(dns_ip_answer));
+      a->type = htons(1);
+      a->klass = htons(1);;
+      a->data_len = htons(4);
+      a->ttl = 0;
+      a->address = (strip_to_intip(names[*parsed]));
 
-        dns_ip_answer * a = (dns_ip_answer *) ptr;
-        memset(a, 0, sizeof(dns_ip_answer));
-        a->type = htons(1);
-        a->klass = htons(1);;
-        a->data_len = htons(4);
-        a->ttl = 0;
-        a->address = (strip_to_intip(names[parsed]));
-
-        res_len += sizeof(dns_ip_answer);
-      }
-
-      cout << "response length: " << res_len << endl;
-
-      sendto(fd, buf, res_len, 0, (sockaddr *) & remaddr, sizeof(remaddr));
-    } catch (char const * e) {
-      cout << "couldn't handle request: " << e << endl;
+      res_len += sizeof(dns_ip_answer);
     }
+
+    cout << "response length: " << res_len << endl;
+
+    sendto(fd, buf, res_len, 0, (sockaddr *) & remaddr, sizeof(remaddr));
   }
 
   return 0;
