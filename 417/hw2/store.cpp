@@ -22,6 +22,10 @@ get_names (string file_name) {
 
     string domain, ip;
     ss >> domain >> ip;
+    size_t pound = ip.find_first_of("#");
+    if (pound != string::npos) {
+      ip.erase(pound, pound - ip.length());
+    }
 
     output[name_to_dns(domain)] = ip;
   }

@@ -13,13 +13,30 @@ using namespace std;
 
 int
 main (int argc, char ** argv) {
-  auto names = get_names("test.txt");
   int rc;
 
-  char * strport = getenv("DNS_PORT");
-  int port;
-  if (!strport) port = 20000;
-  else port = atoi(strport);
+  char * optstr = "usage: %s [-p port] [-f hostfile]";
+  extern char * optarg;
+  extern int optind;
+  int c;
+
+  char * filename = "hosts.txt";
+  char * portstr = "20000";
+
+  while ((c = getopt(argc, argv, "p:f:")) != -1) {
+    switch (c) {
+      case 'p':
+        portstr = optarg;
+      break;
+
+      case 'f':
+        filename = optarg;
+      break;
+    }
+  }
+
+  int port = atoi(portstr);
+  auto names = get_names(filename);
 
   int fd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -61,6 +78,7 @@ main (int argc, char ** argv) {
 
     dns_header * h = (dns_header *) ptr;
     h->qr = 1;
+    h->rcode = 3;
     res_len += sizeof(dns_header) + q_len;
 
     if (parsed && names.count(*parsed) == 1) {
