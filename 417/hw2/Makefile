@@ -11,8 +11,12 @@ TORRENT=../project2.torrent
 OUT=out.mp3
 SWITCHES=
 
-CFLAGS=-std=gnu++0x
+CFLAGS=-std=gnu++0x -g
 CC=g++
+
+all: main
+
+main: $(OBJS) main.o
 
 test: $(TESTDRIVERS) $(TESTFILES) $(TESTS)
 	@echo -e "\n    \033[38;5;40m ✔ All tests passed \033[0m"
