@@ -4,19 +4,17 @@ TESTS=$(subst .o,,$(TESTFILES))
 
 OBJS=dns.o store.o
 
-.PHONY: libbitster bitstercli test $(TESTS)
+.PHONY: test $(TESTS)
 
 CPPFILES=$(wildcard *.cpp)
-TORRENT=../project2.torrent
-OUT=out.mp3
-SWITCHES=
 
 CFLAGS=-std=gnu++0x -g
 CC=g++
 
-all: main
+all: dns-server
 
-main: $(OBJS) main.o
+dns-server: $(OBJS) main.o
+	$(CC) $(CFLAGS) $(OBJS) main.o -o dns-server
 
 test: $(TESTDRIVERS) $(TESTFILES) $(TESTS)
 	@echo -e "\n    \033[38;5;40m ✔ All tests passed \033[0m"
@@ -32,3 +30,4 @@ $(TESTS):
 
 clean:
 	rm -f *.o
+	rm dns-server

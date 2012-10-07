@@ -2,7 +2,7 @@
 #define DNS_H
 
 const char * name_to_dns (string input);
-string * parse_dns_req (char * input, int * len);
+string parse_dns_req (char * input, int * len, int * type, int * klass);
 
 int strip_to_intip (string input);
 

@@ -29,8 +29,8 @@ name_to_dns (string input) {
 // ### parse_dns_req
 // Takes an entire dns packet and returns just the string of the requested
 // host or null if we can't handle the request
-string *
-parse_dns_req (char * input, int * len) {
+string
+parse_dns_req (char * input, int * len, int * type, int * klass) {
   dns_header * h = (dns_header *) input;
 
   unsigned short num_queries = ntohs(h->qd_count);
@@ -48,13 +48,10 @@ parse_dns_req (char * input, int * len) {
 
   *len = strlen(buf) + 1 + 4;
 
-  unsigned short type = ntohs(q->qtype);
-  if (type != 1) return NULL;
+  *type = ntohs(q->qtype);
+  *klass = ntohs(q->qclass);
 
-  unsigned short klass = ntohs(q->qclass);
-  if (klass != 1) return NULL;
-
-  return new string(buf);
+  return string(buf);
 }
 
 int

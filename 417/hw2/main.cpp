@@ -11,6 +11,8 @@ using namespace std;
 #include "store.h"
 #include "dns.h"
 
+// Group member: Russ Frank, working alone
+
 int
 main (int argc, char ** argv) {
   int rc;
@@ -71,18 +73,19 @@ main (int argc, char ** argv) {
       & addrlen
     );
 
-    auto parsed = parse_dns_req(buf, &q_len);
+    int type, klass;
+
+    auto parsed = parse_dns_req(buf, &q_len, &type, &klass);
     res_len = 0;
 
     char * ptr = buf;
 
     dns_header * h = (dns_header *) ptr;
     h->qr = 1;
-    h->rcode = 3;
     res_len += sizeof(dns_header) + q_len;
 
-    if (parsed && names.count(*parsed) == 1) {
-      cout << "Returning: " << names[*parsed] << endl;
+    if (type == 1 && klass == 1 && names.count(parsed) == 1) {
+      cout << "Returning: " << names[parsed] << endl;
 
       h->aa = 1;
       h->tc = 0;
@@ -90,11 +93,12 @@ main (int argc, char ** argv) {
       h->rcode = 0;
       h->an_count = htons(1);
 
+      // Advance past the dns header and query
       ptr += sizeof(dns_header) + q_len;
 
-      memcpy(ptr, parsed->c_str(), strlen(parsed->c_str()) + 1);
-      ptr += strlen(parsed->c_str()) + 1;
-      res_len += strlen(parsed->c_str()) + 1;
+      memcpy(ptr, parsed.c_str(), strlen(parsed.c_str()) + 1);
+      ptr += strlen(parsed.c_str()) + 1;
+      res_len += strlen(parsed.c_str()) + 1;
 
       dns_ip_answer * a = (dns_ip_answer *) ptr;
       memset(a, 0, sizeof(dns_ip_answer));
@@ -102,9 +106,14 @@ main (int argc, char ** argv) {
       a->klass = htons(1);;
       a->data_len = htons(4);
       a->ttl = 0;
-      a->address = (strip_to_intip(names[*parsed]));
+      a->address = (strip_to_intip(names[parsed]));
 
       res_len += sizeof(dns_ip_answer);
+    }
+
+    else {
+      // If we don't know about the domain, mark the response as NXDOMAIN
+      if (names.count(parsed) == 0) h->rcode = 3;
     }
 
     cout << "response length: " << res_len << endl;
