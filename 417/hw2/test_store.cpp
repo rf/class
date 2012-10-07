@@ -15,5 +15,5 @@ main (int argc, char ** argv) {
 
   assert(names.size() == 2);
   assert(names.count("#") == 0);
-  assert(names["www.test.org"] == "12.14.101.22");
+  assert(names["\003www\004test\003org"] == "12.14.101.22");
 }

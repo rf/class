@@ -6,6 +6,8 @@
 
 using namespace std;
 
+#include "dns.h"
+
 const map <string, string>
 get_names (string file_name) {
   ifstream file(file_name);
@@ -21,7 +23,7 @@ get_names (string file_name) {
     string domain, ip;
     ss >> domain >> ip;
 
-    output[domain] = ip;
+    output[name_to_dns(domain)] = ip;
   }
 
   return output;
