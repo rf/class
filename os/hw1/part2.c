@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/eventfd.h>
+#include <unistd.h>
+#include <sys/time.h>
 
-#define MEMSIZE 0
+#define ITERATIONS 1000
 
 long int timer_start_usec;
 long int timer_start_sec;
@@ -19,26 +21,39 @@ inline long int
 stop() {
   struct timeval end;
   gettimeofday(&end, NULL);
-  long int time = (end.tv_usec - timer_start_usec) / 1000;
-  time += (end.tv_sec - timer_start_sec) * 1000;
+  long int time = (end.tv_usec - timer_start_usec);
+  time += (end.tv_sec - timer_start_sec) * 1000 * 1000;
   return time;
 }
 
 int
 main (int argc, char ** argv) {
   int event = eventfd(0, 0);
-  char * memsize = (char *) malloc(MEMSIZE);
-
-  start();
-  if (fork() == 0) {
-    // child
-    long int status;
-    read(event, &status, 8);
-    // parent is done
-    printf("took %ld\n", stop());
-  } else {
-    // parent
-    long int status = 1;
-    write(event, &status, 8);
+  if (argc < 2) {
+    printf("not enough arguments\n");
+    exit(1);
   }
+  int count = atoi(argv[1]) * 1000 * 1000;
+  char * memsize = (char *) malloc(count);
+  int i;
+  long int total_time = 0;
+
+  for (i = 0; i < ITERATIONS; i++) {
+    start();
+    if (fork() == 0) {
+      // child
+      long int status = 1;
+      write(event, &status, 8);
+      exit(0);
+    } else {
+      // parent
+      long int status;
+      read(event, &status, 8);
+      // child is done
+      long int t = stop();
+      total_time += t;
+    }
+  }
+
+  printf("Total time for %d iterations allocating %d bytes of memory: %d\n", ITERATIONS, count, total_time);
 }

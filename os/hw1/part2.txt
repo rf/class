@@ -1,0 +1,16 @@
+Measurements:
+
+Total time for 1000 iterations allocating 1000000 bytes of memory: 437020
+Total time for 1000 iterations allocating 2000000 bytes of memory: 435269
+Total time for 1000 iterations allocating 4000000 bytes of memory: 437161
+Total time for 1000 iterations allocating 8000000 bytes of memory: 434528
+Total time for 1000 iterations allocating 16000000 bytes of memory: 436499
+Total time for 1000 iterations allocating 32000000 bytes of memory: 427130
+Total time for 1000 iterations allocating 64000000 bytes of memory: 437226
+Total time for 1000 iterations allocating 128000000 bytes of memory: 403118
+Total time for 1000 iterations allocating 256000000 bytes of memory: 405319
+Total time for 1000 iterations allocating 512000000 bytes of memory: 447515
+Total time for 1000 iterations allocating 1024000000 bytes of memory: 406533
+
+Clearly the amount of memory allocated has little to do with the time it
+takes to fork; this is because of the copy on write optimization.
