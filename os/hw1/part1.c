@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#define TESTSIZE 64999
-#define INCREMENT 1024
-#define ITERATIONS 5000
+#define TESTSIZE 16384
+#define INCREMENT 128
+#define ITERATIONS 1000
 #define STRIDES 7
 
 long int timer_start_usec;
@@ -50,7 +50,7 @@ main(int argc, const char **argv) {
       // We actually loop to TESTSIZE and then take that modulus the size
       // we're testing. This way we'll only access the first 64 bytes but we'll
       // access the same number of bytes total as when we go through 8192 bytes.
-      for (k = 0; k < TESTSIZE; k++) temp = space[(k * (STRIDES)) % size];
+      for (k = 0; k < TESTSIZE; k++) temp = space[(k % STRIDES) % size];
     }
     time = stop();
     printf("Took %ld ms.\n", time);

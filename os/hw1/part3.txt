@@ -1,11 +1,15 @@
-took 2515882 took 5292145 took 11640459 took 2492681 took 5250120 Wrote 1000000 bytes across pipe 1000 times, took 2495740
-Wrote 2000000 bytes across pipe 1000 times, took 5246467
-Wrote 4000000 bytes across pipe 1000 times, took 11587100
-Wrote 8000000 bytes across pipe 1000 times, took 25343332
-Wrote 16000000 bytes across pipe 1000 times, took 48867831
-Wrote 32000000 bytes across pipe 1000 times, took 98046230
-Wrote 1000000 bytes across pipe 1000 times, took 680200
-Wrote 2000000 bytes across pipe 1000 times, took 1466316
-Wrote 4000000 bytes across pipe 1000 times, took 3567250
-Wrote 8000000 bytes across pipe 1000 times, took 7409287
-Wrote 16000000 bytes across pipe 1000 times, took 14817214
+Here are my measurements:
+
+Wrote 1000000 bytes across pipe 1000 times, took 1169490
+Wrote 2000000 bytes across pipe 1000 times, took 2429703
+Wrote 1000000 bytes across pipe 1000 times, took 1162139
+Wrote 2000000 bytes across pipe 1000 times, took 2407105
+Wrote 4000000 bytes across pipe 1000 times, took 6004005
+Wrote 8000000 bytes across pipe 1000 times, took 11892761
+Wrote 16000000 bytes across pipe 1000 times, took 23748775
+Wrote 32000000 bytes across pipe 1000 times, took 48361037
+Wrote 64000000 bytes across pipe 1000 times, took 94360508
+Wrote 128000000 bytes across pipe 1000 times, took 192851661
+Wrote 512000000 bytes across pipe 1000 times, took 775426079
+
+Clearly, data is copied when it is shuffled across a pipe.
