@@ -1,0 +1,6 @@
+took 2515882 took 5292145 took 11640459 took 2492681 took 5250120 Wrote 1000000 bytes across pipe 1000 times, took 2495740
+Wrote 2000000 bytes across pipe 1000 times, took 5246467
+Wrote 4000000 bytes across pipe 1000 times, took 11587100
+Wrote 8000000 bytes across pipe 1000 times, took 25343332
+Wrote 16000000 bytes across pipe 1000 times, took 48867831
+Wrote 32000000 bytes across pipe 1000 times, took 98046230
