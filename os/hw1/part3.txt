@@ -4,3 +4,8 @@ Wrote 4000000 bytes across pipe 1000 times, took 11587100
 Wrote 8000000 bytes across pipe 1000 times, took 25343332
 Wrote 16000000 bytes across pipe 1000 times, took 48867831
 Wrote 32000000 bytes across pipe 1000 times, took 98046230
+Wrote 1000000 bytes across pipe 1000 times, took 680200
+Wrote 2000000 bytes across pipe 1000 times, took 1466316
+Wrote 4000000 bytes across pipe 1000 times, took 3567250
+Wrote 8000000 bytes across pipe 1000 times, took 7409287
+Wrote 16000000 bytes across pipe 1000 times, took 14817214
