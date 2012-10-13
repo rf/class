@@ -1,0 +1,4 @@
+I was unable to find the cache size or the cache line size from my
+measurements. Despite trying a bunch of different values for my
+experiment, the cache access times were always extremely consistent
+across the sizes I tested.

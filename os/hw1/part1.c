@@ -2,9 +2,10 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
-#define TESTSIZE 8192
-#define INCREMENT 256
-#define ITERATIONS 10000
+#define TESTSIZE 64999
+#define INCREMENT 1024
+#define ITERATIONS 5000
+#define STRIDES 7
 
 long int timer_start_usec;
 long int timer_start_sec;
@@ -28,9 +29,7 @@ stop() {
 
 int
 main(int argc, const char **argv) {
-  char * space = (char *) malloc(TESTSIZE);
-  int i;
-  for (i = 0; i < TESTSIZE; i++) space[i] = i % 10;
+  int i, temp;
 
   int size;
   // We will try accessing `size` bytes from the array a few thousand times,
@@ -40,18 +39,22 @@ main(int argc, const char **argv) {
   for (size = INCREMENT; size <= TESTSIZE; size += INCREMENT) {
     int j;
     long int time;
-    printf("Timing %d iterations of accessing %d bytes of array: ", ITERATIONS, size);
+    char * space = (char *) malloc(size);
+    // loop over whole array 10 times
+    for (i = 0; i < size * 10; i++) temp = space[i % size];
+    printf("Timing %d iterations of accessing %d bytes of array striding across %d: ", ITERATIONS, size, STRIDES);
     start();
     for (j = 0; j < ITERATIONS; j++) {
-      int k, temp;
+      int k;
 
       // We actually loop to TESTSIZE and then take that modulus the size
       // we're testing. This way we'll only access the first 64 bytes but we'll
       // access the same number of bytes total as when we go through 8192 bytes.
-      for (k = 0; k < TESTSIZE; k++) temp = space[(k * (rand() % 10)) % size];
+      for (k = 0; k < TESTSIZE; k++) temp = space[(k * (STRIDES)) % size];
     }
     time = stop();
     printf("Took %ld ms.\n", time);
+    free(space);
   }
 
   return 0;
