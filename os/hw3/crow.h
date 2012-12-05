@@ -14,7 +14,7 @@ typedef struct crow_scheduler {
   bool running;
 } crow_scheduler_t;
 
-typedef void (*crow_entry_t)(crow_scheduler_t * scheduler, void * arg);
+typedef void (*crow_entry_t)(struct crow * me, crow_scheduler_t * scheduler, void * arg);
 
 typedef struct crow {
   ucontext_t * context;

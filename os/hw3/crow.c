@@ -4,10 +4,6 @@
 
 #include "crow.h"
 
-crow_t * foobar_crow;
-crow_t * barbaz_crow;
-crow_scheduler_t * global_scheduler_lol;
-
 crow_scheduler_t *
 crow_setup () {
   crow_scheduler_t * scheduler = create(crow_scheduler_t);
@@ -36,10 +32,8 @@ crow_create (crow_scheduler_t * scheduler, crow_entry_t entry) {
   context->uc_stack.ss_sp = stack;
   context->uc_stack.ss_size = STACK_SIZE;
   context->uc_link = scheduler->context;
-  
-  // We need to pass the scheduler pointer in, so we have to split it since
-  // makecontext expects int args
-  makecontext(context, entry, 0);
+
+  makecontext(context, entry, 2, new, scheduler);
   new->context = context;
 }
 
@@ -55,33 +49,33 @@ crow_begin (crow_scheduler_t * scheduler, void * arg) {
     crow_node_t * n;
     foreach (scheduler->queue, n) {
       // reset the context so it starts the coro from the beginning each time
-      makecontext(n->crow->context, n->crow->entry, 0);
+      makecontext(n->crow->context, n->crow->entry, 2, n->crow, scheduler);
       swapcontext(scheduler->context, n->crow->context);
     }
   }
 }
 
 void
-foobar (crow_scheduler_t * scheduler, void * arg) {
+foobar (crow_t * me, crow_scheduler_t * scheduler, void * arg) {
   printf("in foobar\n");
   sleep(1);
-  crow_yield(foobar_crow, global_scheduler_lol);
+//  crow_yield(me, scheduler);
 }
 
 void
-barbaz (crow_scheduler_t * scheduler, void * arg) {
+barbaz (crow_t * me, crow_scheduler_t * scheduler, void * arg) {
   printf("in barbaz\n");
   sleep(1);
-  crow_yield(barbaz_crow, global_scheduler_lol);
+//  crow_yield(me, scheduler);
 }
 
 int
 main (int argc, char ** argv) {
   crow_scheduler_t * sched = crow_setup();
-  foobar_crow = crow_create(sched, foobar);
-  barbaz_crow = crow_create(sched, barbaz);
+  crow_t * foobar_crow = crow_create(sched, foobar);
+  crow_t * barbaz_crow = crow_create(sched, barbaz);
 
-  global_scheduler_lol = sched;
+  printf("REG_RIP: %d\n", REG_RIP);
 
   crow_begin(sched, NULL);
 }
