@@ -29,9 +29,8 @@ typedef struct crow_node {
 #define create(object) (object *) calloc(sizeof(object), 1)
 
 #define prepend(prev, object) \
-  if (prev != NULL) { object->next = prev; prev = object; } \
+  if (prev != NULL) { object->next = prev; prev->next = NULL; prev = object; } \
   else prev = object; \
-  prev->next = NULL;
   
 #define insert(prev, object) object->next = prev->next; prev->next = object;
 

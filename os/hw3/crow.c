@@ -64,12 +64,14 @@ crow_begin (crow_scheduler_t * scheduler, void * arg) {
 void
 foobar (crow_scheduler_t * scheduler, void * arg) {
   printf("in foobar\n");
+  sleep(1);
   crow_yield(foobar_crow, global_scheduler_lol);
 }
 
 void
 barbaz (crow_scheduler_t * scheduler, void * arg) {
   printf("in barbaz\n");
+  sleep(1);
   crow_yield(barbaz_crow, global_scheduler_lol);
 }
 
