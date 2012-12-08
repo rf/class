@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdint.h>
+#include <sys/time.h>
 
 #include "crow.h"
 
@@ -14,7 +16,7 @@ crow_setup () {
 }
 
 crow_t *
-crow_create (crow_scheduler_t * scheduler, crow_entry_t entry) {
+crow_create (crow_scheduler_t * scheduler, crow_entry_t entry, void * arg) {
   crow_t * new = create(crow_t);
   new->entry = entry;
 
@@ -43,39 +45,64 @@ crow_yield (crow_t * crow, crow_scheduler_t * scheduler) {
 }
 
 void
-crow_begin (crow_scheduler_t * scheduler, void * arg) {
+crow_begin (crow_scheduler_t * scheduler) {
   scheduler->running = true;
   while (scheduler->running) {
     crow_node_t * n;
     foreach (scheduler->queue, n) {
       // reset the context so it starts the coro from the beginning each time
-      makecontext(n->crow->context, n->crow->entry, 2, n->crow, scheduler);
-      swapcontext(scheduler->context, n->crow->context);
+      //makecontext(n->crow->context, n->crow->entry, 2, n->crow, scheduler);
+      scheduler->current = n->crow;
+      int rc = swapcontext(scheduler->context, n->crow->context);
+      if (rc != 0) { perror("swapcontext"); exit(EXIT_FAILURE); }
     }
   }
 }
 
+crow_scheduler_t * s;
+
+void
+crow_timer (int signum) {
+  // Swap into the scheduler
+  swapcontext(s->current->context, s->context);
+}
+
 void
 foobar (crow_t * me, crow_scheduler_t * scheduler, void * arg) {
-  printf("in foobar\n");
-  sleep(1);
-//  crow_yield(me, scheduler);
+  int i = 0;
+  while (1) {
+    printf("in foobar: %d\n", i++);
+  }
 }
 
 void
 barbaz (crow_t * me, crow_scheduler_t * scheduler, void * arg) {
-  printf("in barbaz\n");
-  sleep(1);
-//  crow_yield(me, scheduler);
+  int i = 0;
+  while (1) {
+    printf("in barbaz: %d\n", i++);
+  }
 }
 
 int
 main (int argc, char ** argv) {
   crow_scheduler_t * sched = crow_setup();
-  crow_t * foobar_crow = crow_create(sched, foobar);
-  crow_t * barbaz_crow = crow_create(sched, barbaz);
+  crow_t * foobar_crow = crow_create(sched, foobar, NULL);
+  crow_t * barbaz_crow = crow_create(sched, barbaz, NULL);
 
-  printf("REG_RIP: %d\n", REG_RIP);
+  s = sched;
 
-  crow_begin(sched, NULL);
+  struct sigaction sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = crow_timer;
+
+  sigaction(SIGVTALRM, &sa, NULL);
+
+  struct itimerval tout_val;
+  tout_val.it_interval.tv_sec = 0;
+  tout_val.it_interval.tv_usec = 10000;
+  tout_val.it_value.tv_sec = 0;
+  tout_val.it_value.tv_usec = 10000;
+  setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
+
+  crow_begin(sched);
 }

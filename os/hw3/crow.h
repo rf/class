@@ -4,13 +4,14 @@
 #include <ucontext.h>
 #include <stdbool.h>
 
-#define STACK_SIZE 16384 // 1mb stack size by default
+#define STACK_SIZE 16384 // 16k stack size by default
 
 // This struct describes a scheduler, which has his own context and a queue of
 // crows to run.
 typedef struct crow_scheduler {
   struct crow_node * queue;
   ucontext_t * context;
+  struct crow * current;
   bool running;
 } crow_scheduler_t;
 
