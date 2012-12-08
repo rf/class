@@ -50,11 +50,8 @@ crow_begin (crow_scheduler_t * scheduler) {
   while (scheduler->running) {
     crow_node_t * n;
     foreach (scheduler->queue, n) {
-      // reset the context so it starts the coro from the beginning each time
-      //makecontext(n->crow->context, n->crow->entry, 2, n->crow, scheduler);
       scheduler->current = n->crow;
-      int rc = swapcontext(scheduler->context, n->crow->context);
-      if (rc != 0) { perror("swapcontext"); exit(EXIT_FAILURE); }
+      handle_error(swapcontext(scheduler->context, n->crow->context));
     }
   }
 }
@@ -63,6 +60,17 @@ crow_scheduler_t * s;
 
 void
 crow_timer (int signum) {
+  uint64_t sched_rbp = s->context->uc_mcontext.gregs[REG_RBP];
+  uint64_t rbp;
+  asm("movq %%rbp, %0" : "=r" (rbp) : /* no inputs */ : /* no clobbers */);
+
+  // Check to see if the stack frame ptr is within 10mb of the scheduler's
+  // stack frame ptr. This is a hacky but okay solution for determining
+  // whether the interrupt occurred in the scheduler code.
+  if (abs(rbp - sched_rbp) < 10485760) {
+    return;
+  }
+
   // Swap into the scheduler
   swapcontext(s->current->context, s->context);
 }
@@ -71,7 +79,9 @@ void
 foobar (crow_t * me, crow_scheduler_t * scheduler, void * arg) {
   int i = 0;
   while (1) {
-    printf("in foobar: %d\n", i++);
+    i++;
+    if (i % 10000000 == 0)
+      printf("in foobar: %d\n", i);
   }
 }
 
@@ -79,7 +89,9 @@ void
 barbaz (crow_t * me, crow_scheduler_t * scheduler, void * arg) {
   int i = 0;
   while (1) {
-    printf("in barbaz: %d\n", i++);
+    i++;
+    if (i % 10000000 == 0)
+      printf("in barbaz: %d\n", i);
   }
 }
 
@@ -99,9 +111,9 @@ main (int argc, char ** argv) {
 
   struct itimerval tout_val;
   tout_val.it_interval.tv_sec = 0;
-  tout_val.it_interval.tv_usec = 10000;
+  tout_val.it_interval.tv_usec = 10;
   tout_val.it_value.tv_sec = 0;
-  tout_val.it_value.tv_usec = 10000;
+  tout_val.it_value.tv_usec = 10;
   setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
 
   crow_begin(sched);

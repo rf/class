@@ -1,6 +1,7 @@
 #ifndef CROW_H
 #define CROW_H
 
+#define __USE_GNU // expose the inner structs of ucontext
 #include <ucontext.h>
 #include <stdbool.h>
 
@@ -37,5 +38,11 @@ typedef struct crow_node {
 
 #define foreach(list, node) \
   for (node = list; node != NULL; node = node->next) \
+
+#define handle_error(stuff) \
+  if (stuff != 0) { \
+    perror("stuff"); \
+    exit(EXIT_FAILURE); \
+  } 
 
 #endif // CROW_H
