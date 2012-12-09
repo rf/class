@@ -6,6 +6,8 @@
 
 #include "third.h"
 
+third_scheduler_t * global_scheduler;
+
 third_scheduler_t *
 third_setup () {
   third_scheduler_t * scheduler = create(third_scheduler_t);
@@ -92,28 +94,8 @@ third_mutex_unlock (third_t * locker, third_mutex_t * mutex) {
 }
 
 void
-third_begin (third_scheduler_t * scheduler) {
-  scheduler->running = true;
-  while (scheduler->running) {
-    third_node_t * n;
-    foreach (scheduler->queue, n) {
-      if (n->third->state == S_BLOCKED) {
-        if (n->third->current_mutex->state == M_UNLOCKED)
-          n->third->state = S_RUNNING;
-        else continue;
-      }
-
-      scheduler->current = n->third;
-      handle_error(swapcontext(scheduler->context, n->third->context));
-    }
-  }
-}
-
-third_scheduler_t * s;
-
-void
 third_timer (int signum) {
-  uint64_t sched_rbp = s->context->uc_mcontext.gregs[REG_RBP];
+  uint64_t sched_rbp = global_scheduler->context->uc_mcontext.gregs[REG_RBP];
   uint64_t rbp;
   asm("movq %%rbp, %0" : "=r" (rbp) : /* no inputs */ : /* no clobbers */);
 
@@ -125,69 +107,117 @@ third_timer (int signum) {
   }
 
   // Swap into the scheduler
-  swapcontext(s->current->context, s->context);
+  swapcontext(global_scheduler->current->context, global_scheduler->context);
 }
 
-third_mutex_t * mutex;
-
 void
-foobar (third_t * me, void * arg) {
-  int i = 0;
-  while (1) {
-    i++;
-    if (i % 100000000 == 0)
-      printf("foobar %d\n", i);
-    if (i == 100000000) {
-      printf("foobar is locking mutex\n");
-      third_mutex_lock(me, mutex);
-      printf("foobar has mutex\n");
-    }
+third_begin (third_scheduler_t * scheduler, bool preemption) {
+  // setup the timer
+  if (preemption) {
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = third_timer;
 
-    if (i == 1600000000) {
-      printf("foobar is unlocking mutex\n");
-      third_mutex_unlock(me, mutex);
+    sigaction(SIGVTALRM, &sa, NULL);
+
+    struct itimerval tout_val;
+    tout_val.it_interval.tv_sec = 0;
+    tout_val.it_interval.tv_usec = 1000;
+    tout_val.it_value.tv_sec = 0;
+    tout_val.it_value.tv_usec = 1000;
+    setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
+
+    global_scheduler = scheduler;
+  }
+
+  scheduler->running = true;
+  while (scheduler->running) {
+    third_node_t * n;
+    foreach (scheduler->queue, n) {
+      if (n->third->state == S_BLOCKED) {
+        if (n->third->current_mutex->state == M_UNLOCKED)
+          n->third->state = S_RUNNING;
+        else continue;
+      }
+
+      else if (n->third->state == S_BOX_SEND) {
+        // box send block. check to see if there are available slots, if so,
+        // reschedule the third.
+        third_box_t * box = n->third->current_box;
+        if (box->slot_state[box->next_empty] == S_READ)
+          n->third->state = S_RUNNING; // unblock it
+        else continue;
+      }
+
+      else if (n->third->state == S_BOX_RECV) {
+        // box recv block. check to see if there is available data, if so,
+        // reschedule the third.
+        third_box_t * box = n->third->current_box;
+        if (box->slot_state[box->current_unread] == S_UNREAD)
+          n->third->state = S_RUNNING; // unblock it
+        else continue;
+      }
+
+      scheduler->current = n->third;
+      handle_error(swapcontext(scheduler->context, n->third->context));
     }
   }
 }
 
-void
-barbaz (third_t * me, void * arg) {
-  int i = 0;
-  while (1) {
-    i++;
-    if (i % 100000000 == 0)
-      printf("barbaz %d\n", i);
-    if (i == 500000000) {
-      printf("barbaz attempting to lock mutex\n");
-      fflush(stdout);
-      third_mutex_lock(me, mutex);
-      printf("barbaz has mutex\n");
-    }
-  }
+third_box_t *
+third_box_create (int num_slots, int slot_size) {
+  third_box_t * new = create(third_box_t);
+  new->mutex = third_mutex_create();
+  new->num_slots = num_slots;
+  new->slot_size = slot_size;
+
+  new->slots = calloc(num_slots, slot_size);
+  new->current_unread = 0;
+  new->next_empty = 0;
+
+  new->slot_state = calloc(sizeof(enum { S_READ, S_UNREAD }), num_slots);
+  int i;
+  for (i = 0; i < num_slots; i++) new->slot_state[i] = S_READ;
+  return new;
 }
 
-int
-main (int argc, char ** argv) {
-  third_scheduler_t * sched = third_setup();
-  third_t * foobar_third = third_create(sched, foobar, NULL);
-  third_t * barbaz_third = third_create(sched, barbaz, NULL);
+void
+third_box_send (third_box_t * box, third_t * from, void * data) {
+  third_mutex_lock(from, box->mutex);
 
-  mutex = third_mutex_create();
+  if (box->slot_state[box->next_empty] == S_UNREAD) {
+    third_mutex_unlock(from, box->mutex);
+    from->current_box = box;
+    from->state = S_BOX_SEND;
+    third_yield(from);
+    third_mutex_lock(from, box->mutex);
+  } 
 
-  s = sched;
+  memcpy(box->slots + (box->next_empty * box->slot_size), data, box->slot_size);
+  box->slot_state[box->next_empty] = S_UNREAD;
+  box->next_empty += 1;
+  if (box->next_empty >= box->num_slots) box->next_empty = 0;
 
-  struct sigaction sa;
-  memset(&sa, 0, sizeof(sa));
-  sa.sa_handler = third_timer;
+  third_mutex_unlock(from, box->mutex);
+}
 
-  sigaction(SIGVTALRM, &sa, NULL);
+void *
+third_box_recv (third_box_t * box, third_t * me) {
+  third_mutex_lock(me, box->mutex);
 
-  struct itimerval tout_val;
-  tout_val.it_interval.tv_sec = 0;
-  tout_val.it_interval.tv_usec = 10;
-  tout_val.it_value.tv_sec = 0;
-  tout_val.it_value.tv_usec = 10;
-  setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
+  if (box->slot_state[box->current_unread] == S_READ) {
+    third_mutex_unlock(me, box->mutex);
+    me->current_box = box;
+    me->state = S_BOX_RECV;
+    third_yield(me);
+    third_mutex_lock(me, box->mutex);
+  }
 
-  third_begin(sched);
+  void * data = box->slots + (box->current_unread * box->slot_size);
+  box->slot_state[box->current_unread] = S_READ;
+  box->current_unread += 1;
+  if (box->current_unread >= box->num_slots) box->current_unread = 0;
+
+  third_mutex_unlock(me, box->mutex);
+  return data;
 }
