@@ -1,5 +1,5 @@
-#ifndef CROW_H
-#define CROW_H
+#ifndef third_H
+#define third_H
 
 #define __USE_GNU // expose the inner structs of ucontext
 #include <ucontext.h>
@@ -8,25 +8,33 @@
 #define STACK_SIZE 16384 // 16k stack size by default
 
 // This struct describes a scheduler, which has his own context and a queue of
-// crows to run.
-typedef struct crow_scheduler {
-  struct crow_node * queue;
+// thirds to run.
+typedef struct third_scheduler {
+  struct third_node * queue;
   ucontext_t * context;
-  struct crow * current;
+  struct third * current;
   bool running;
-} crow_scheduler_t;
+} third_scheduler_t;
 
-typedef void (*crow_entry_t)(struct crow * me, crow_scheduler_t * scheduler, void * arg);
+typedef void (*third_entry_t)(struct third * me, void * arg);
 
-typedef struct crow {
+typedef struct third {
   ucontext_t * context;
-  crow_entry_t entry;
-} crow_t;
+  third_entry_t entry;
+  enum { S_RUNNING, S_BLOCKED } state;
+  struct third_mutex * current_mutex;
+  third_scheduler_t * scheduler;
+} third_t;
 
-typedef struct crow_node {
-  crow_t * crow;
-  struct crow_node * next;
-} crow_node_t;
+typedef struct third_node {
+  third_t * third;
+  struct third_node * next;
+} third_node_t;
+
+typedef struct third_mutex {
+  enum { M_LOCKED, M_UNLOCKED } state;
+  third_t * locked_by;
+} third_mutex_t;
 
 #define create(object) (object *) calloc(sizeof(object), 1)
 
@@ -45,4 +53,4 @@ typedef struct crow_node {
     exit(EXIT_FAILURE); \
   } 
 
-#endif // CROW_H
+#endif // third_H
