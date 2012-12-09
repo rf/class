@@ -29,8 +29,19 @@ foobar (third_t * me, void * arg) {
       printf("foobar sent message\n");
     }
 
-    if (i == 1600000000) {
+    if (i % 50000000 == 0) {
+      message_t m;
+      m.type = 1;
+      m.payload = i;
+      third_box_send(box, me, &m);
 
+      m.type = 2;
+      m.payload = i;
+      third_box_send(box, me, &m);
+
+      m.type = 3;
+      m.payload = i;
+      third_box_send(box, me, &m);
     }
   }
 }
@@ -40,12 +51,10 @@ barbaz (third_t * me, void * arg) {
   int i = 0;
   while (1) {
     i++;
-    if (i % 100000000 == 0)
-      printf("barbaz %d\n", i);
-
-    printf("barbaz recving\n");
-    message_t * m = (message_t *) third_box_recv(box, me);
-    printf("barbaz got msg type: %d payload: %d\n", m->type, m->payload);
+    if (i % 100000000 == 0) {
+      message_t * m = (message_t *) third_box_recv(box, me);
+      printf("barbaz got msg type: %d payload: %d\n", m->type, m->payload);
+    }
 
     if (i == 500000000) {
 
@@ -59,7 +68,7 @@ main (int argc, char ** argv) {
   third_t * foobar_third = third_create(sched, foobar, NULL);
   third_t * barbaz_third = third_create(sched, barbaz, NULL);
 
-  box = third_box_create(10, sizeof(message_t));
+  box = third_box_create(100, sizeof(message_t));
 
   third_begin(sched, true);
 }

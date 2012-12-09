@@ -122,9 +122,9 @@ third_begin (third_scheduler_t * scheduler, bool preemption) {
 
     struct itimerval tout_val;
     tout_val.it_interval.tv_sec = 0;
-    tout_val.it_interval.tv_usec = 1000;
+    tout_val.it_interval.tv_usec = 10000;
     tout_val.it_value.tv_sec = 0;
-    tout_val.it_value.tv_usec = 1000;
+    tout_val.it_value.tv_usec = 10000;
     setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
 
     global_scheduler = scheduler;
