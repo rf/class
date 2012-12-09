@@ -11,7 +11,7 @@ tests: third.o $(TESTDRIVERS) $(TESTS)
 
 $(TESTS): 
 	@echo -e "Compiling $@ test"
-	@$(CC) $(OBJS) third.o test_$@.o -o $@
+	$(CC) $(OBJS) third.o test_$@.o -o $@
 
 .c.o: 
 	$(CC) $(CFLAGS) $< -c -o $@

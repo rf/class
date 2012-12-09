@@ -6,6 +6,14 @@
 
 #include "third.h"
 
+// thirds will exit into this handler when they're done. It will mark their
+// state as done
+void
+third_runner (third_t * run) {
+  run->entry(run, NULL);
+  run->state = DONE;
+}
+
 third_scheduler_t * global_scheduler;
 
 third_scheduler_t *
@@ -21,7 +29,7 @@ third_t *
 third_create (third_scheduler_t * scheduler, third_entry_t entry, void * arg) {
   third_t * new = create(third_t);
   new->entry = entry;
-  new->state = S_RUNNING;
+  new->state = RUNNING;
 
   // Add to run queue
   third_node_t * node = create(third_node_t);
@@ -38,7 +46,7 @@ third_create (third_scheduler_t * scheduler, third_entry_t entry, void * arg) {
   context->uc_stack.ss_size = STACK_SIZE;
   context->uc_link = scheduler->context;
 
-  makecontext(context, (void (*)()) entry, 2, new);
+  makecontext(context, (void (*)()) third_runner, 1, new);
   new->context = context;
 
   new->scheduler = scheduler;
@@ -47,7 +55,7 @@ third_create (third_scheduler_t * scheduler, third_entry_t entry, void * arg) {
 third_mutex_t * 
 third_mutex_create () {
   third_mutex_t * new = create(third_mutex_t);
-  new->state = M_UNLOCKED;
+  new->state = UNLOCKED;
   return new;
 }
 
@@ -57,44 +65,61 @@ third_yield (third_t * third) {
 }
 
 void
+third_join (third_t * me, third_t * him) {
+  me->state = JOIN;
+  me->blocked.join = him;
+  third_yield(me);
+}
+
+void
 third_mutex_lock (third_t * locker, third_mutex_t * mutex) {
-  if (mutex->state != M_LOCKED) {
-    mutex->state = M_LOCKED;
+  if (mutex->state != LOCKED) {
+    locker->scheduler->disabled = true;
+    mutex->state = LOCKED;
     mutex->locked_by = locker;
+    locker->scheduler->disabled = false;
   } else {
-    locker->current_mutex = mutex;
-    locker->state = S_BLOCKED;
+    locker->blocked.mutex = mutex;
+    locker->state = BLOCKED;
     third_yield(locker);
 
+    locker->scheduler->disabled = true;
     // when we're rescheduled, we should be able to grab the mutex
-    if (mutex->state == M_UNLOCKED) {
-      mutex->state = M_LOCKED;
+    if (mutex->state == UNLOCKED) {
+      mutex->state = LOCKED;
       mutex->locked_by = locker;
     }
+    locker->scheduler->disabled = false;
   }
 }
 
 void
 third_mutex_trylock (third_t * locker, third_mutex_t * mutex) {
-  if (mutex->state == M_LOCKED) return;
+  locker->scheduler->disabled = true;
+  if (mutex->state == LOCKED) return;
   else {
     third_mutex_lock(locker, mutex);
   }
+  locker->scheduler->disabled = false;
 }
 
 void
 third_mutex_unlock (third_t * locker, third_mutex_t * mutex) {
-  if (mutex->state != M_LOCKED) return;
+  locker->scheduler->disabled = true;
+  if (mutex->state != LOCKED) return;
   else {
     if (mutex->locked_by == locker) {
-      mutex->state = M_UNLOCKED;
+      mutex->state = UNLOCKED;
       mutex->locked_by = NULL;
     }
   }
+  locker->scheduler->disabled = false;
 }
 
 void
 third_timer (int signum) {
+  if (global_scheduler->disabled) return;
+
   uint64_t sched_rbp = global_scheduler->context->uc_mcontext.gregs[REG_RBP];
   uint64_t rbp;
   asm("movq %%rbp, %0" : "=r" (rbp) : /* no inputs */ : /* no clobbers */);
@@ -122,9 +147,9 @@ third_begin (third_scheduler_t * scheduler, bool preemption) {
 
     struct itimerval tout_val;
     tout_val.it_interval.tv_sec = 0;
-    tout_val.it_interval.tv_usec = 10000;
+    tout_val.it_interval.tv_usec = 1;
     tout_val.it_value.tv_sec = 0;
-    tout_val.it_value.tv_usec = 10000;
+    tout_val.it_value.tv_usec = 1;
     setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
 
     global_scheduler = scheduler;
@@ -134,29 +159,37 @@ third_begin (third_scheduler_t * scheduler, bool preemption) {
   while (scheduler->running) {
     third_node_t * n;
     foreach (scheduler->queue, n) {
-      if (n->third->state == S_BLOCKED) {
-        if (n->third->current_mutex->state == M_UNLOCKED)
-          n->third->state = S_RUNNING;
+      if (n->third->state == BLOCKED) {
+        if (n->third->blocked.mutex->state == UNLOCKED)
+          n->third->state = RUNNING;
         else continue;
       }
 
-      else if (n->third->state == S_BOX_SEND) {
+      else if (n->third->state == BOX_SEND) {
         // box send block. check to see if there are available slots, if so,
         // reschedule the third.
-        third_box_t * box = n->third->current_box;
-        if (box->slot_state[box->next_empty] == S_READ)
-          n->third->state = S_RUNNING; // unblock it
+        third_box_t * box = n->third->blocked.box;
+        if (box->slot_state[box->next_empty] == READ)
+          n->third->state = RUNNING; // unblock it
         else continue;
       }
 
-      else if (n->third->state == S_BOX_RECV) {
+      else if (n->third->state == BOX_RECV) {
         // box recv block. check to see if there is available data, if so,
         // reschedule the third.
-        third_box_t * box = n->third->current_box;
-        if (box->slot_state[box->current_unread] == S_UNREAD)
-          n->third->state = S_RUNNING; // unblock it
+        third_box_t * box = n->third->blocked.box;
+        if (box->slot_state[box->current_unread] == UNREAD)
+          n->third->state = RUNNING; // unblock it
         else continue;
       }
+
+      else if (n->third->state == JOIN) {
+        if (n->third->blocked.join->state == DONE)
+          n->third->state = RUNNING;
+        else continue;
+      }
+
+      else if (n->third->state == DONE) continue;
 
       scheduler->current = n->third;
       handle_error(swapcontext(scheduler->context, n->third->context));
@@ -175,9 +208,9 @@ third_box_create (int num_slots, int slot_size) {
   new->current_unread = 0;
   new->next_empty = 0;
 
-  new->slot_state = calloc(sizeof(enum { S_READ, S_UNREAD }), num_slots);
+  new->slot_state = calloc(sizeof(enum { READ, UNREAD }), num_slots);
   int i;
-  for (i = 0; i < num_slots; i++) new->slot_state[i] = S_READ;
+  for (i = 0; i < num_slots; i++) new->slot_state[i] = READ;
   return new;
 }
 
@@ -185,16 +218,16 @@ void
 third_box_send (third_box_t * box, third_t * from, void * data) {
   third_mutex_lock(from, box->mutex);
 
-  if (box->slot_state[box->next_empty] == S_UNREAD) {
+  if (box->slot_state[box->next_empty] == UNREAD) {
     third_mutex_unlock(from, box->mutex);
-    from->current_box = box;
-    from->state = S_BOX_SEND;
+    from->blocked.box = box;
+    from->state = BOX_SEND;
     third_yield(from);
     third_mutex_lock(from, box->mutex);
   } 
 
   memcpy(box->slots + (box->next_empty * box->slot_size), data, box->slot_size);
-  box->slot_state[box->next_empty] = S_UNREAD;
+  box->slot_state[box->next_empty] = UNREAD;
   box->next_empty += 1;
   if (box->next_empty >= box->num_slots) box->next_empty = 0;
 
@@ -205,16 +238,16 @@ void *
 third_box_recv (third_box_t * box, third_t * me) {
   third_mutex_lock(me, box->mutex);
 
-  if (box->slot_state[box->current_unread] == S_READ) {
+  if (box->slot_state[box->current_unread] == READ) {
     third_mutex_unlock(me, box->mutex);
-    me->current_box = box;
-    me->state = S_BOX_RECV;
+    me->blocked.box = box;
+    me->state = BOX_RECV;
     third_yield(me);
     third_mutex_lock(me, box->mutex);
   }
 
   void * data = box->slots + (box->current_unread * box->slot_size);
-  box->slot_state[box->current_unread] = S_READ;
+  box->slot_state[box->current_unread] = READ;
   box->current_unread += 1;
   if (box->current_unread >= box->num_slots) box->current_unread = 0;
 
