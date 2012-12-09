@@ -12,6 +12,14 @@ void
 third_runner (third_t * run) {
   run->entry(run, NULL);
   run->state = DONE;
+  run->scheduler->done += 1;
+}
+
+void
+third_exit (third_t * me) {
+  me->state = DONE;
+  me->scheduler->done += 1;
+  third_yield(me);
 }
 
 third_scheduler_t * global_scheduler;
@@ -19,8 +27,6 @@ third_scheduler_t * global_scheduler;
 third_scheduler_t *
 third_setup () {
   third_scheduler_t * scheduler = create(third_scheduler_t);
-  scheduler->queue = create(third_node_t);
-
   ucontext_t * context = calloc(sizeof(ucontext_t), 1);
   scheduler->context = context;
 }
@@ -50,6 +56,9 @@ third_create (third_scheduler_t * scheduler, third_entry_t entry, void * arg) {
   new->context = context;
 
   new->scheduler = scheduler;
+  scheduler->total += 1;
+
+  return new;
 }
 
 third_mutex_t * 
@@ -147,16 +156,15 @@ third_begin (third_scheduler_t * scheduler, bool preemption) {
 
     struct itimerval tout_val;
     tout_val.it_interval.tv_sec = 0;
-    tout_val.it_interval.tv_usec = 1;
+    tout_val.it_interval.tv_usec = 100;
     tout_val.it_value.tv_sec = 0;
-    tout_val.it_value.tv_usec = 1;
+    tout_val.it_value.tv_usec = 100;
     setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
 
     global_scheduler = scheduler;
   }
 
-  scheduler->running = true;
-  while (scheduler->running) {
+  while (scheduler->done < scheduler->total) {
     third_node_t * n;
     foreach (scheduler->queue, n) {
       if (n->third->state == BLOCKED) {
@@ -184,8 +192,9 @@ third_begin (third_scheduler_t * scheduler, bool preemption) {
       }
 
       else if (n->third->state == JOIN) {
-        if (n->third->blocked.join->state == DONE)
+        if (n->third->blocked.join->state == DONE) {
           n->third->state = RUNNING;
+        }
         else continue;
       }
 

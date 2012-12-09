@@ -6,8 +6,8 @@
 
 #include "third.h"
 
-third_mutex_t * mutex;
 third_t * barbaz_third;
+third_t * sprangadang_third;
 
 void
 foobar (third_t * me, void * arg) {
@@ -19,7 +19,11 @@ foobar (third_t * me, void * arg) {
     if (i == 100000000) {
       printf("foobar is joining\n");
       third_join(me, barbaz_third);
-      printf("foobar join done\n");
+      printf("foobar barbaz join done\n");
+      printf("foobar joining sprangadang\n");
+      third_join(me, sprangadang_third);
+      printf("foobar sprangadang join done");
+      third_exit(me);
     }
   }
 }
@@ -33,6 +37,20 @@ barbaz (third_t * me, void * arg) {
       printf("barbaz %d\n", i);
   }
   printf("barbaz exiting\n");
+  third_exit(me);
+}
+
+void
+sprangadang (third_t * me, void * arg) {
+  int i = 0;
+  while (i < 2000000000) {
+    i++;
+    if (i % 100000000 == 0)
+      printf("sprangadang %d\n", i);
+  }
+  printf("sprangadang exiting\n");
+  third_exit(me);
+  printf("should not be visible\n");
 }
 
 int
@@ -40,8 +58,7 @@ main (int argc, char ** argv) {
   third_scheduler_t * sched = third_setup();
   third_t * foobar_third = third_create(sched, foobar, NULL);
   barbaz_third = third_create(sched, barbaz, NULL);
-
-  mutex = third_mutex_create();
+  sprangadang_third = third_create(sched, sprangadang, NULL);
 
   third_begin(sched, true);
 }

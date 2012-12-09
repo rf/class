@@ -13,11 +13,14 @@ typedef struct third_scheduler {
   struct third_node * queue;
   ucontext_t * context;
   struct third * current;
-  bool running;
+
   // for disabling the scheduler during mutex operations, to make them atomic.
   // This is a silly solution, but it should work since dropping an int into
   // memory (as long as it's aligned) should be atomic on x86
   bool disabled;
+
+  int total;
+  int done;
 } third_scheduler_t;
 
 typedef void (*third_entry_t)(struct third * me, void * arg);
@@ -60,7 +63,7 @@ typedef struct third_box {
 #define create(object) (object *) calloc(sizeof(object), 1)
 
 #define prepend(prev, object) \
-  if (prev != NULL) { object->next = prev; prev->next = NULL; prev = object; } \
+  if (prev != NULL) { object->next = prev; prev = object; } \
   else prev = object; \
   
 #define insert(prev, object) object->next = prev->next; prev->next = object;
@@ -90,5 +93,6 @@ void * third_box_recv (third_box_t * box, third_t * me);
 void third_box_send (third_box_t * box, third_t * from, void * data);
 third_box_t * third_box_create (int num_slots, int slot_size);
 void third_join (third_t * me, third_t * him);
+void third_exit (third_t * me);
 
 #endif // third_H
