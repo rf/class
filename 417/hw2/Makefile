@@ -32,5 +32,3 @@ clean:
 	rm -f *.o
 	rm -f dns-server
 
-doc:
-	marked README.md > README.html

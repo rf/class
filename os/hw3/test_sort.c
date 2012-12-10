@@ -117,7 +117,7 @@ void * fncheck( third_t * me, void *arg )
         // j seconds
         j = j+1;
 #ifndef MYTHREAD
-//        sleep( j );
+ //       sleep( j );
 #endif
         third_yield(me);
     }
