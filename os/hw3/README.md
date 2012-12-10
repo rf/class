@@ -1,5 +1,7 @@
 # third
 
+**Russ Frank**
+
 `third` is a simple userland thread library. It is capable of preemptive, round
 robin scheduling. It implements most of the functionality available in 
 `pthreads`.

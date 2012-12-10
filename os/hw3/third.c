@@ -1,3 +1,5 @@
+// Russ Frank - CS416 homework 3
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,8 +8,7 @@
 
 #include "third.h"
 
-// thirds will exit into this handler when they're done. It will mark their
-// state as done
+// runs thirds, then marks their state as done when they exit
 void
 third_runner (third_t * run, void * arg) {
   run->entry(run, arg);
@@ -24,6 +25,7 @@ third_exit (third_t * me) {
 
 third_scheduler_t * global_scheduler;
 
+// setup a scheduler
 third_scheduler_t *
 third_setup () {
   third_scheduler_t * scheduler = create(third_scheduler_t);
@@ -31,6 +33,7 @@ third_setup () {
   scheduler->context = context;
 }
 
+// Create new third
 third_t *
 third_create (third_scheduler_t * scheduler, third_entry_t entry, void * arg) {
   third_t * new = create(third_t);
