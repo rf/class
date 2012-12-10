@@ -5,3 +5,6 @@ test_box.o
 test_join.o
 test_mutex.o
 third.o
+sort
+test_sort.o
+part-a
