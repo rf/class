@@ -17,7 +17,7 @@ $(TESTS):
 	$(CC) $(CFLAGS) $< -c -o $@
 
 clean:
-	rm *.o
+	rm -rf *.o sort join mutex box
 
 doc:
 	marked README.md > README.html
