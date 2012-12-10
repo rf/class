@@ -4,7 +4,7 @@ TESTS=$(subst .o,,$(TESTFILES))
 
 OBJS=dns.o store.o
 
-.PHONY: test $(TESTS)
+.PHONY: test $(TESTS) doc
 
 CPPFILES=$(wildcard *.cpp)
 
@@ -31,3 +31,6 @@ $(TESTS):
 clean:
 	rm -f *.o
 	rm -f dns-server
+
+doc:
+	marked README.md > README.html

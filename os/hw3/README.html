@@ -4,8 +4,17 @@ robin scheduling. It implements most of the functionality available in
 <code>pthreads</code>.
 
 </p>
-<p>There are a few important differences between <code>third</code> and <code>pthreads</code>.  The 
-creation functions usually return pointers rather than intializing a struct.
+<h2>Mutexes and disabling the scheduler</h2>
+<p>I have a pretty stupid way of disabling the scheduler while doing mutex
+operations, in order to make them atomic. I basically just write a flag that
+says &quot;don&#39;t preempt&quot;. Memory-aligned writes are atomic on x86, so this works;
+but it&#39;s relatively naive.
 
+</p>
+<h2>Mailbox functionality</h2>
+<p>I added a simple mailbox API to my library. It allows circular <code>box</code>es to be
+created with a certain number of <code>slot</code>s. Once a slot has been read, it is
+marked as such and can be used as a place for a new message. Reads and writes
+to the boxes will block a <code>third</code>.
 </p>
 

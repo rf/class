@@ -18,3 +18,6 @@ $(TESTS):
 
 clean:
 	rm *.o
+
+doc:
+	marked README.md > README.html
