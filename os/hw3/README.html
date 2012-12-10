@@ -4,6 +4,35 @@ robin scheduling. It implements most of the functionality available in
 <code>pthreads</code>.
 
 </p>
+<h2>Sorting example</h2>
+<p>The sorting example is called <code>test_sort.c</code> and it can be tested as such:
+
+</p>
+<p><code>
+make test
+./sort
+</code>
+
+</p>
+<p>I had to make some minor modifications for it to work with my library, which
+has a bit of a weird API.
+
+</p>
+<h2>Consistency with pthreads</h2>
+<p><code>third</code> isn&#39;t completely consistent with <code>pthreads</code>. Its creation
+functions return pointers to structs rather than operating on pointers to
+structs. Many of the functions require the current <code>third</code> to be passed in,
+which makes the implementation a little bit simpler.
+
+</p>
+<h2>Detecting whether we interrupted the scheduler</h2>
+<p>Instead of using E/RIP to detect if we interrupted the scheduler, I instead
+use the stack base pointer.  This is a pretty silly way of detecting whether
+we interrupted the scheduler, but it does work.  Basically, I just check to see
+if RBP is within 10mb of the stored RBP for the scheduler; if it I don&#39;t
+preempt.
+
+</p>
 <h2>Mutexes and disabling the scheduler</h2>
 <p>I have a pretty stupid way of disabling the scheduler while doing mutex
 operations, in order to make them atomic. I basically just write a flag that
