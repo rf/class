@@ -9,8 +9,8 @@
 // thirds will exit into this handler when they're done. It will mark their
 // state as done
 void
-third_runner (third_t * run) {
-  run->entry(run, NULL);
+third_runner (third_t * run, void * arg) {
+  run->entry(run, arg);
   run->state = DONE;
   run->scheduler->done += 1;
 }
@@ -52,7 +52,7 @@ third_create (third_scheduler_t * scheduler, third_entry_t entry, void * arg) {
   context->uc_stack.ss_size = STACK_SIZE;
   context->uc_link = scheduler->context;
 
-  makecontext(context, (void (*)()) third_runner, 1, new);
+  makecontext(context, (void (*)()) third_runner, 2, new, arg);
   new->context = context;
 
   new->scheduler = scheduler;
@@ -80,13 +80,14 @@ third_join (third_t * me, third_t * him) {
   third_yield(me);
 }
 
-void
+int
 third_mutex_lock (third_t * locker, third_mutex_t * mutex) {
   if (mutex->state != LOCKED) {
     locker->scheduler->disabled = true;
     mutex->state = LOCKED;
     mutex->locked_by = locker;
     locker->scheduler->disabled = false;
+    return 0;
   } else {
     locker->blocked.mutex = mutex;
     locker->state = BLOCKED;
@@ -99,17 +100,21 @@ third_mutex_lock (third_t * locker, third_mutex_t * mutex) {
       mutex->locked_by = locker;
     }
     locker->scheduler->disabled = false;
+    return 0;
   }
 }
 
-void
+int
 third_mutex_trylock (third_t * locker, third_mutex_t * mutex) {
   locker->scheduler->disabled = true;
-  if (mutex->state == LOCKED) return;
-  else {
+  if (mutex->state == LOCKED) {
+    locker->scheduler->disabled = false;
+    return 1;
+  } else {
     third_mutex_lock(locker, mutex);
+    locker->scheduler->disabled = false;
+    return 0;
   }
-  locker->scheduler->disabled = false;
 }
 
 void
@@ -156,9 +161,9 @@ third_begin (third_scheduler_t * scheduler, bool preemption) {
 
     struct itimerval tout_val;
     tout_val.it_interval.tv_sec = 0;
-    tout_val.it_interval.tv_usec = 100;
+    tout_val.it_interval.tv_usec = 10000;
     tout_val.it_value.tv_sec = 0;
-    tout_val.it_value.tv_usec = 100;
+    tout_val.it_value.tv_usec = 10000;
     setitimer(ITIMER_VIRTUAL, &tout_val, NULL);
 
     global_scheduler = scheduler;

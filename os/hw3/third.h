@@ -23,7 +23,7 @@ typedef struct third_scheduler {
   int done;
 } third_scheduler_t;
 
-typedef void (*third_entry_t)(struct third * me, void * arg);
+typedef void * (*third_entry_t)(struct third * me, void * arg);
 
 typedef struct third {
   ucontext_t * context;
@@ -83,8 +83,8 @@ third_t * third_create (third_scheduler_t * scheduler, third_entry_t entry, void
 void third_yield (third_t * third);
 
 third_mutex_t * third_mutex_create ();
-void third_mutex_lock (third_t * locker, third_mutex_t * mutex);
-void third_mutex_trylock (third_t * locker, third_mutex_t * mutex);
+int third_mutex_lock (third_t * locker, third_mutex_t * mutex);
+int third_mutex_trylock (third_t * locker, third_mutex_t * mutex);
 void third_mutex_unlock (third_t * locker, third_mutex_t * mutex);
 
 void third_begin (third_scheduler_t * scheduler, bool preemption);
