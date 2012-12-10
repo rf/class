@@ -18,6 +18,24 @@ make test
 has a bit of a weird API.
 
 </p>
+<h2>Sorting questions</h2>
+<p>Since I didn&#39;t write the sort example myself, here are my answers to the
+questions:
+
+</p>
+<ol>
+<li><p>Well, this algorithm essentially consists of each thread trying to get a
+chance to perform a swap. Once the thread was able to do a swap, we want to
+now allow a different thread to swap; if we were to run around the loop
+again, there would be nothing to do. So, we yield, with the hope that some
+other thread will perform a swap so we don&#39;t waste time the next time we
+pop around that loop.</p>
+</li>
+<li><p>The virtual timer I&#39;m using doesn&#39;t appear to increment when a system
+call is in progress; so if that sleep is left in, I never preempt because
+the interrupt is never fired.</p>
+</li>
+</ol>
 <h2>Consistency with pthreads</h2>
 <p><code>third</code> isn&#39;t completely consistent with <code>pthreads</code>. Its creation
 functions return pointers to structs rather than operating on pointers to
@@ -45,5 +63,27 @@ but it&#39;s relatively naive.
 created with a certain number of <code>slot</code>s. Once a slot has been read, it is
 marked as such and can be used as a place for a new message. Reads and writes
 to the boxes will block a <code>third</code>.
+
+</p>
+<h2>Re: extra credit COW idea</h2>
+<p>I think this is a really fascinating idea. However, I don&#39;t think it&#39;s
+appropriate to implement it with a SIGSEGV handler; this sounds dangerous. Also,
+it&#39;d require a pretty ugly interface to work.  Alternatively, a disassembler
+could be used to perform surgery on the running code to place in a new address.
+
+</p>
+<p>It seems like this would be much safer to implement at the kernel level, where
+we have the benefit of the paging hardware&#39;s translation. COW could be
+implemented between threads in exactly the same way it&#39;s implemented between
+processes. A new system call could be added called <code>create_cow_reference()</code> or
+so which would return a new address pointing to the same data which would be
+COW optimized.
+
+</p>
+<p>However, I&#39;d also argue that this is rather easy to implement by convention in
+a user&#39;s program. Using my mailbox code, it&#39;s fairly easy to shuffle pointers
+between two <code>third</code>s. Then, the author of said program would decree that once a
+pointer is shuffled across, it is the responsibility of the receiver to deal
+with it. This is heavily application dependent, though.
 </p>
 

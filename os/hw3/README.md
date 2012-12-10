@@ -28,7 +28,7 @@ questions:
    other thread will perform a swap so we don't waste time the next time we
    pop around that loop.
 
-2. Well, the virtual timer I'm using doesn't appear to increment when a system
+2. The virtual timer I'm using doesn't appear to increment when a system
    call is in progress; so if that sleep is left in, I never preempt because
    the interrupt is never fired.
 
@@ -65,7 +65,7 @@ to the boxes will block a `third`.
 
 I think this is a really fascinating idea. However, I don't think it's
 appropriate to implement it with a SIGSEGV handler; this sounds dangerous. Also,
-it'd require a pretty ugly interface to work.  Alternatively, a dissasembler
+it'd require a pretty ugly interface to work.  Alternatively, a disassembler
 could be used to perform surgery on the running code to place in a new address.
 
 It seems like this would be much safer to implement at the kernel level, where
@@ -77,6 +77,6 @@ COW optimized.
 
 However, I'd also argue that this is rather easy to implement by convention in
 a user's program. Using my mailbox code, it's fairly easy to shuffle pointers
-accross the box. Then, the author of said program would decree that once a
-pointer is shuffled accross, it is the responsibility of the receiver to deal
+between two `third`s. Then, the author of said program would decree that once a
+pointer is shuffled across, it is the responsibility of the receiver to deal
 with it. This is heavily application dependent, though.
