@@ -139,7 +139,7 @@ third_timer (int signum) {
 
   uint64_t sched_rbp = global_scheduler->context->uc_mcontext.gregs[REG_RBP];
   uint64_t rbp;
-  asm("movq %%rbp, %0" : "=r" (rbp) : /* no inputs */ : /* no clobbers */);
+  asm("movq %%rbp, %0" : "=r" (rbp) : /* no inputs */ );
 
   // Check to see if the stack frame ptr is within 10mb of the scheduler's
   // stack frame ptr. This is a hacky but okay solution for determining
